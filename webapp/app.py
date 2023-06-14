@@ -3,6 +3,9 @@ from PIL import Image
 from io import BytesIO
 import base64
 import time
+import cv2
+from pyzbar.pyzbar import decode
+
 
 st.set_page_config(
     page_title="AntiWaste",
@@ -24,20 +27,29 @@ def fix_image(upload):
     image = Image.open(upload)
     col1.write("Original Image :camera:")
     col1.image(image)
-
-    st.sidebar.markdown("\n")
+    
+    detectedBarcodes = decode(image)
+    
+    # If not detected then print the message
+    if not detectedBarcodes:
+       st.write("Barcode Not Detected or your barcode is blank/corrupted!")
+    else:
+        for barcode in detectedBarcodes: 
+            if barcode.data!="": 
+            # Print the barcode data
+                st.write(barcode.data)
+                st.write(barcode.type)
+        st.sidebar.markdown("\n")
 
 
 col1, col2 = st.columns(2)
 my_upload = st.sidebar.file_uploader("🍍 Upload an image 🥕", type=["png", "jpg", "jpeg"])
-
+st.write(my_upload)
 if my_upload is not None:
     fix_image(upload=my_upload)
 
 st.sidebar.write("\n\n\n")
 st.sidebar.download_button("Submit image", "fixed.png", "image/png")
-
-
 
 with st.spinner(text='In progress'):
    time.sleep(5)
