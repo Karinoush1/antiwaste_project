@@ -19,7 +19,7 @@ RUN pip install pypng
 RUN pip install pillow
 RUN pip install qrtools
 
-RUN pip install boto3 pandas gunicorn streamlit scikit-learn matplotlib pillow seaborn plotly pyzbar
+RUN pip install boto3 pandas gunicorn streamlit scikit-learn matplotlib pillow seaborn plotly pyzbar openfoodfacts
 
 COPY . /home/app
 
