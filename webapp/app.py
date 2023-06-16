@@ -7,7 +7,8 @@ import cv2
 from pyzbar.pyzbar import decode
 import openfoodfacts
 import re
-
+import spoonacular as sp
+import os
 
 st.set_page_config(
     page_title="AntiWaste",
@@ -57,24 +58,48 @@ if my_upload is not None:
 
     st.write("list barcode : ",product)
 
-#st.sidebar.download_button("Submit image", "fixed.png", "image/png")
+#api = sp.API(os.environ["SPOONACULAR_API_KEY"])
+api = sp.API("c135fe564b084d9bb1eedd248a56d637")
 
-with st.spinner(text='In progress'):
-   time.sleep(5)
-   st.sidebar.success('Done')
+# search recipes by ingredients
+response = api.search_recipes_by_ingredients(ingredients="apples,flour,sugar", number=3)
+data = response.json()
 
-st.sidebar.error('Error message')
-st.sidebar.warning('Warning message')
-st.sidebar.info('Info message')
-st.sidebar.success('Success message')
+# translator import
+from translate import Translator
+translator= Translator(to_lang="fr")
 
-#st.balloons()
-#st.snow()
-#st.exception(e)
+import requests
 
-progress_text = "Operation in progress. Please wait."
-my_bar = st.sidebar.progress(0, text=progress_text)
+ 
+for recipe in data:
+    filename_ = "image.jpg"
+    url = recipe['image']
 
-for percent_complete in range(100):
-    time.sleep(0.1)
-    my_bar.progress(percent_complete + 1, text=progress_text)
+    #st.write(recipe['image'])
+    st.write(recipe['title'])
+
+    # translation
+    translation = translator.translate(recipe['title'])
+    st.write(translation)
+    #st.write(recipe['sourceUrl'])
+    st.image(recipe['image'])
+
+
+
+
+    query = "https://api.spoonacular.com/recipes/1082038/ingredientWidget?apiKey=c135fe564b084d9bb1eedd248a56d637"
+    response = requests.get(query)
+    html_response = response.text
+    # Render the HTML response using Streamlit
+    st.markdown(html_response, unsafe_allow_html=True)
+
+#import datetime
+#st.sidebar.subheader("Prédition de la demande")
+#timeOfTheDay= st.sidebar.time_input("Choisir l'heure", datetime.time(8, 45,00))
+#st.sidebar.write('Heure:', timeOfTheDay)
+#st.sidebar.markdown("Renseignez vos coordonnées GPS")
+## latitude
+#latitude= st.sidebar.number_input("Choisir la latitude ", min_value=0,max_value=50)
+#longitude= st.sidebar.number_input("Choisir la longitude ", min_value=0,max_value=50)
+#st.sidebar.write('Vos coordonnées GPS (latitude,longitude) : ', (latitude,longitude))
