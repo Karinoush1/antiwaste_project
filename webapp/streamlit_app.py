@@ -3,12 +3,14 @@ from PIL import Image
 from io import BytesIO
 import base64
 import time
-import cv2
 from pyzbar.pyzbar import decode
 import openfoodfacts
 import re
 import spoonacular as sp
 import os
+from translate import Translator
+import requests
+
 
 st.set_page_config(
     page_title="AntiWaste",
@@ -43,11 +45,12 @@ def fix_image(upload):
                 st.write(barcode.type)
         st.sidebar.markdown("\n")
     return detectedBarcodes
-
-col1, col2 = st.columns(2)
+# nombre de colonnes
+nb_col = 4
+col1, col2, col3, col4 = st.columns(nb_col)
 my_upload = st.sidebar.file_uploader("🍍 Upload an image 🥕", type=["png", "jpg", "jpeg"])
-st.write(my_upload)
 
+st.sidebar.button("prediction")
 product = []
 if my_upload is not None:
     detectedBarcodes = fix_image(upload=my_upload)
@@ -62,37 +65,34 @@ if my_upload is not None:
 api = sp.API("c135fe564b084d9bb1eedd248a56d637")
 
 # search recipes by ingredients
-response = api.search_recipes_by_ingredients(ingredients="apples,flour,sugar", number=3)
+response = api.search_recipes_by_ingredients(ingredients="apple, flour, citron", number=nb_col)
+
 data = response.json()
 
-# translator import
-from translate import Translator
+# translator
 translator= Translator(to_lang="fr")
 
-import requests
 
- 
-for recipe in data:
-    filename_ = "image.jpg"
+column = [col1, col2, col3, col4]
+
+for recipe, i in zip(data, range(0,nb_col,1)):
     url = recipe['image']
-
-    #st.write(recipe['image'])
-    st.write(recipe['title'])
-
     # translation
     translation = translator.translate(recipe['title'])
-    st.write(translation)
-    #st.write(recipe['sourceUrl'])
-    st.image(recipe['image'])
+    column[i].write(translation)
 
 
+    response = requests.head(url)
+    if response.status_code == 200:
+        # des fois spoonacular n'a pas d'images.
+        #column[i].write(recipe['image'])
+        column[i].image(recipe['image'])
+    else:
+        column[i].write("💔 The image is not available 😢")
+
+    i += 1
 
 
-    query = "https://api.spoonacular.com/recipes/1082038/ingredientWidget?apiKey=c135fe564b084d9bb1eedd248a56d637"
-    response = requests.get(query)
-    html_response = response.text
-    # Render the HTML response using Streamlit
-    st.markdown(html_response, unsafe_allow_html=True)
 
 #import datetime
 #st.sidebar.subheader("Prédition de la demande")
@@ -103,3 +103,7 @@ for recipe in data:
 #latitude= st.sidebar.number_input("Choisir la latitude ", min_value=0,max_value=50)
 #longitude= st.sidebar.number_input("Choisir la longitude ", min_value=0,max_value=50)
 #st.sidebar.write('Vos coordonnées GPS (latitude,longitude) : ', (latitude,longitude))
+
+
+
+
