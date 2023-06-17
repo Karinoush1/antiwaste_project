@@ -23,4 +23,4 @@ RUN pip install boto3 pandas gunicorn streamlit scikit-learn matplotlib pillow s
 
 COPY . /home/app
 
-CMD streamlit run --server.port $PORT app.py
+CMD streamlit run --server.port $PORT streamlit_app.py

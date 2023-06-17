@@ -15,7 +15,8 @@ import requests
 st.set_page_config(
     page_title="AntiWaste",
     page_icon="🗑️",
-    layout="wide"
+    layout="centered", #"wide" 
+    initial_sidebar_state="expanded"
 )
 
 st.write("## Antiwaste application")
@@ -46,7 +47,7 @@ def fix_image(upload):
         st.sidebar.markdown("\n")
     return detectedBarcodes
 # nombre de colonnes
-nb_col = 4
+nb_col = [1,1,1,10]
 col1, col2, col3, col4 = st.columns(nb_col)
 my_upload = st.sidebar.file_uploader("🍍 Upload an image 🥕", type=["png", "jpg", "jpeg"])
 
@@ -61,8 +62,7 @@ if my_upload is not None:
 
     st.write("list barcode : ",product)
 
-#api = sp.API(os.environ["SPOONACULAR_API_KEY"])
-api = sp.API("c135fe564b084d9bb1eedd248a56d637")
+api = sp.API(os.environ["SPOONACULAR_API_KEY"])
 
 # search recipes by ingredients
 response = api.search_recipes_by_ingredients(ingredients="apple, flour, citron", number=nb_col)
