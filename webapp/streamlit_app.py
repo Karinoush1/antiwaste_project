@@ -31,10 +31,7 @@ st.sidebar.write("## Upload :gear:")
 nb_col = 4
 col1, col2, col3, col4 = st.columns(nb_col)
 
-
-###############################
-
-# 
+# barcode detection 
 def fix_image(upload):
     image = Image.open(upload)
     col1.write("Original Image :camera:")
@@ -56,7 +53,6 @@ def fix_image(upload):
 
 
 def main():
-   
     # 1. sidebar upload image (fruits, vegetables, product with barcode)
     my_upload = st.sidebar.file_uploader("🍍 Upload an image (fruits or product with barcode) 🥕", type=["png", "jpg", "jpeg"])
     
@@ -73,8 +69,7 @@ def main():
 
     # 2. search recipes by ingredients - spoonacular api
     ingredients="apple, flour, citron"
-    st.write("La liste des ingrédients : ",ingredients)
-    
+    st.write("La liste des ingrédients : ",translator.translate(ingredients))
     response = api.search_recipes_by_ingredients(ingredients=ingredients, number=nb_col)
     data = response.json()
 
