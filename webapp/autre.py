@@ -18,6 +18,9 @@ st.sidebar.success('Success message')"""
 ####################################################################
 
 
+#picture = st.sidebar.camera_input("🥑 Take photo 📸")
+#if picture:
+#    st.image(picture)
 
 
 
@@ -60,11 +63,16 @@ st.components.v1.html(html_response)
 
 
 
-
-
-
-
-
+####################################################################
+#import datetime
+#st.sidebar.subheader("Prédition de la demande")
+#timeOfTheDay= st.sidebar.time_input("Choisir l'heure", datetime.time(8, 45,00))
+#st.sidebar.write('Heure:', timeOfTheDay)
+#st.sidebar.markdown("Renseignez vos coordonnées GPS")
+## latitude
+#latitude= st.sidebar.number_input("Choisir la latitude ", min_value=0,max_value=50)
+#longitude= st.sidebar.number_input("Choisir la longitude ", min_value=0,max_value=50)
+#st.sidebar.write('Vos coordonnées GPS (latitude,longitude) : ', (latitude,longitude))
 
 
 
