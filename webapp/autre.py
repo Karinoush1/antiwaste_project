@@ -23,7 +23,7 @@ st.sidebar.success('Success message')"""
 
 
 ####################################################################
-"""progress_text = "Operation in progress. Please wait."
+"""progress_text = "Your image is in the oven."
 my_bar = st.sidebar.progress(0, text=progress_text)
 
 for percent_complete in range(100):
