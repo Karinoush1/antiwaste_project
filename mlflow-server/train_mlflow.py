@@ -41,7 +41,7 @@ if __name__ == "__main__":
     mlflow.set_tracking_uri(os.environ["APP_URI"])
 
     # set and get experiment's info 
-    EXPERIMENT_NAME="experiment_1"
+    EXPERIMENT_NAME="experiment_4"
     mlflow.set_experiment(EXPERIMENT_NAME)
     experiment = mlflow.get_experiment_by_name(EXPERIMENT_NAME)
 
