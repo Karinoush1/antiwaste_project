@@ -11,9 +11,9 @@ import boto3                        # AWS S3
 import botocore
 from translate import Translator    # translator
 
-AWS_KEY_ID = "AKIA2PGNFKTIEM62XLP2" # os.environ["AWS_ACCESS_KEY_ID"] 
-AWS_KEY_SECRET = "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" #os.environ["AWS_SECRET_ACCESS_KEY"]
-S3_BUCKET = "antiwaste-bucket" #os.environ["S3_BUCKET"]
+AWS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"] 
+AWS_KEY_SECRET = os.environ["AWS_SECRET_ACCESS_KEY"]
+S3_BUCKET = os.environ["S3_BUCKET"]
 
 
 ##################################################################################
