@@ -1,17 +1,7 @@
-FROM continuumio/miniconda3
+FROM tiangolo/uvicorn-gunicorn:python3.10
 
-WORKDIR /home/app
+RUN apt update && \
+    apt install -y htop libgl1-mesa-glx libglib2.0-0
 
-RUN apt-get update -y 
-RUN apt-get install nano unzip
-RUN apt-get install -y python3.10
-RUN apt install curl -y
-
-#RUN curl -fsSL https://get.deta.dev/cli.sh | sh
-
-COPY requirements.txt /dependencies/requirements.txt
-RUN pip install -r /dependencies/requirements.txt
-
-COPY . /home/app
-
-CMD gunicorn app:app --bind 0.0.0.0:$PORT --worker-class uvicorn.workers.UvicornWorker 
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt

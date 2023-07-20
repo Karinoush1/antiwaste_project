@@ -1,132 +1,147 @@
-import uvicorn 
+from PIL import Image
+import io
 import pandas as pd
-from pydantic import BaseModel
-import mlflow
-from typing import Literal, List, Union
-from fastapi import FastAPI, File, UploadFile
+import numpy as np
 
+from typing import Optional
 
-## configurations
-description = """
-This is your app description, written in markdown code 
-# This is a title 
-* This is a bullet point 
-"""
+from ultralytics import YOLO
+from ultralytics.yolo.utils.plotting import Annotator, colors
 
-tags_metadata = [
-    {
-        "name": "Name_1",
-        "description": "LOREM IPSUM NEC."
-    },
+yoloF = "YOLO_best_frederic_25062023.pt"
+model_sample_model = YOLO(f'model/{yoloF}')
 
-    {
-        "name": "Name_2",
-        "description": "LOREM IPSUM NEC."
-    }
-]
-
-# will contain the functionalities of the application
-app = FastAPI(
-    title="🪐 Antiwaste API",
-    description=description,
-    version="0.1",
-    contact={
-        "name": "Antiwaste app",
-        "url": "http://app-antiwaste.herokuapp.com/",
-    },
-    openapi_tags=tags_metadata
-)
-
-
-## define endpoints
-# a specific url an API user will use to get a specific information from the API
-
-# get + adress parameter ?name="..." with default value
-@app.get("/custom-greetings")
-async def custom_greetings(name:str="Mr (or Miss) Nobody"):
-    greetings = {
-        "Message" : f"Hello {name} user"
-    }
-
-    return greetings
-
-# python instructions
-"""
-import requests
-r = requests.get("http://localhost:4001/custom-greetings", params={"name":"gringo"})
-r.content
-"""
-
-# get + path parameter
-# the user specify the parameter blog_id
-@app.get("/blog-articles/{blog_id}")
-async def read_blog_article(blog_id: int):
-    articles = pd.read_csv("https://full-stack-assets.s3.eu-west-3.amazonaws.com/Deployment/articles.csv")
-    if blog_id > len(articles):
-        response = {
-            "msg": "We don't have that many articles!"
-        }
-    else:
-        article = articles.iloc[blog_id, :]
-        response = {
-            "title": article.title,
-            "content": article.content, 
-            "author": article.author
-        }
-
-    return response
-
-
-# post + pydantic (BaseModel)
-class BlogArticles(BaseModel):
-    title: str
-    content: str
-    author: str = "Anonymous Author"
-    avg_reading_time: int #Union[int, float] # Average reading time which can be a int or float
-    category: Literal["Tech", "Environment", "Politics"] = "Tech" # Literal representing a category that can be only between "Tech", "Environment", "Politics". Default is "Tech"
-    tags: List[str] = None # Accepts only a list of strings, and default is None (meaning nothing)
-
-@app.post("/create-blog-article")
-async def create_blog_article(blog_article: BlogArticles):
-    df = pd.read_csv("https://full-stack-assets.s3.eu-west-3.amazonaws.com/Deployment/articles.csv")
-    new_article = pd.Series({
-        'id': len(df)+1,
-        'title': blog_article.title,
-        'content': blog_article.content,
-        'author': blog_article.author,
-        'average_reading_time': blog_article.avg_reading_time,
-        'category': blog_article.category, 
-        'tags': blog_article.tags 
-    })
-
-    df = pd.concat([df, new_article])
-
-    return df.to_json()
-
-# simple post endpoint
-@app.post("/another-post-endpoint")
-async def another_post_endpoint(blog_article: BlogArticles):
-    example_data = {
-        'title': blog_article.title,
-        'content': blog_article.content,
-        'author': blog_article.author
-    }
-    return example_data
-
-
-# get + tags to categorize the endpoint as Name_1
-@app.get("/", tags=["Name_1"]) # here we categorized this endpoint as part of "Name_1" tag
-async def index():
-    message = "Hello world! This `/` is the most simple and default endpoint. If you want to learn more, check out documentation of the api at `/docs`"
-    return message
-
-# get + tags + documentation defined by """... """
-@app.get("/", tags=["Introduction Endpoints"])
-async def index():
+def get_image_from_bytes(binary_image: bytes) -> Image:
+    """Convert image from bytes to PIL RGB format
+    
+    Args:
+        binary_image (bytes): The binary representation of the image
+    
+    Returns:
+        PIL.Image: The image in PIL RGB format
     """
-    Simply returns a welcome message!
+    input_image = Image.open(io.BytesIO(binary_image)).convert("RGB")
+    return input_image
+
+
+def get_bytes_from_image(image: Image) -> bytes:
     """
-    message = "Hello world! This `/` is the most simple and default endpoint. If you want to learn more, check out documentation of the api at `/docs`"
-    return message
-if __name__=="__main__":
-    uvicorn.run(app, host="0.0.0.0", port=4001)
+    Convert PIL image to Bytes
+    
+    Args:
+    image (Image): A PIL image instance
+    
+    Returns:
+    bytes : BytesIO object that contains the image in JPEG format with quality 85
+    """
+    return_image = io.BytesIO()
+    image.save(return_image, format='JPEG', quality=85)  # save the image in JPEG format with quality 85
+    return_image.seek(0)  # set the pointer to the beginning of the file
+    return return_image
+
+def transform_predict_to_df(results: list, labeles_dict: dict) -> pd.DataFrame:
+    """
+    Transform predict from yolov8 (torch.Tensor) to pandas DataFrame.
+
+    Args:
+        results (list): A list containing the predict output from yolov8 in the form of a torch.Tensor.
+        labeles_dict (dict): A dictionary containing the labels names, where the keys are the class ids and the values are the label names.
+        
+    Returns:
+        predict_bbox (pd.DataFrame): A DataFrame containing the bounding box coordinates, confidence scores and class labels.
+    """
+    # Transform the Tensor to numpy array
+    predict_bbox = pd.DataFrame(results[0].to("cpu").numpy().boxes.xyxy, columns=['xmin', 'ymin', 'xmax','ymax'])
+    # Add the confidence of the prediction to the DataFrame
+    predict_bbox['confidence'] = results[0].to("cpu").numpy().boxes.conf
+    # Add the class of the prediction to the DataFrame
+    predict_bbox['class'] = (results[0].to("cpu").numpy().boxes.cls).astype(int)
+    # Replace the class number with the class name from the labeles_dict
+    predict_bbox['name'] = predict_bbox["class"].replace(labeles_dict)
+    return predict_bbox
+
+def get_model_predict(model: YOLO, input_image: Image, save: bool = False, image_size: int = 1248, conf: float = 0.5, augment: bool = False) -> pd.DataFrame:
+    """
+    Get the predictions of a model on an input image.
+    
+    Args:
+        model (YOLO): The trained YOLO model.
+        input_image (Image): The image on which the model will make predictions.
+        save (bool, optional): Whether to save the image with the predictions. Defaults to False.
+        image_size (int, optional): The size of the image the model will receive. Defaults to 1248.
+        conf (float, optional): The confidence threshold for the predictions. Defaults to 0.5.
+        augment (bool, optional): Whether to apply data augmentation on the input image. Defaults to False.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing the predictions.
+    """
+    # Make predictions
+    predictions = model.predict(
+                        imgsz=image_size, 
+                        source=input_image, 
+                        conf=conf,
+                        save=save, 
+                        augment=augment,
+                        flipud= 0.0,
+                        fliplr= 0.0,
+                        mosaic = 0.0,
+                        )
+    
+    # Transform predictions to pandas dataframe
+    predictions = transform_predict_to_df(predictions, model.model.names)
+    return predictions
+
+
+################################# BBOX Func #####################################
+
+def add_bboxs_on_img(image: Image, predict: pd.DataFrame()) -> Image:
+    """
+    add a bounding box on the image
+
+    Args:
+    image (Image): input image
+    predict (pd.DataFrame): predict from model
+
+    Returns:
+    Image: image whis bboxs
+    """
+    # Create an annotator object
+    annotator = Annotator(np.array(image))
+
+    # sort predict by xmin value
+    predict = predict.sort_values(by=['xmin'], ascending=True)
+
+    # iterate over the rows of predict dataframe
+    for i, row in predict.iterrows():
+        # create the text to be displayed on image
+        text = f"{row['name']}: {int(row['confidence']*100)}%"
+        # get the bounding box coordinates
+        bbox = [row['xmin'], row['ymin'], row['xmax'], row['ymax']]
+        # add the bounding box and text on the image
+        annotator.box_label(bbox, text, color=colors(row['class'], True))
+    # convert the annotated image to PIL image
+    return Image.fromarray(annotator.result())
+
+
+################################# Models #####################################
+
+def detect_sample_model(input_image: Image) -> pd.DataFrame:
+    """
+    Predict from sample_model.
+    Base on YoloV8
+
+    Args:
+        input_image (Image): The input image.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the object location.
+    """
+    predict = get_model_predict(
+        model=model_sample_model,
+        input_image=input_image,
+        save=False,
+        image_size=640,
+        augment=False,
+        conf=0.5,
+    )
+    return predict
